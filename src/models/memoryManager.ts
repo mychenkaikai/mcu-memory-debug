@@ -7,12 +7,11 @@ export interface MemoryItem {
     name: string;
     address: number;
     size: number;
-    type: 'region' | 'peripheral' | 'variable';
-    value?: string;
-    children?: MemoryItem[];
+    type: 'region' | 'peripheral' | 'variable' | 'gap';
     description?: string;
     readable?: boolean;
     writable?: boolean;
+    children?: MemoryItem[];
 }
 
 export class MemoryManager {

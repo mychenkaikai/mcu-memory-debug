@@ -63,16 +63,47 @@ export class MemoryMapView {
         ];
 
         for (const range of segmentRanges) {
-            const segmentItems = items.filter(
+            const segmentItems: MemoryItem[] = [];
+            const rangeItems = items.filter(
                 item => item.address >= range.start && item.address <= range.end
-            );
+            ).sort((a, b) => a.address - b.address);
 
-            if (segmentItems.length > 0) {
+            if (rangeItems.length > 0) {
+                // 添加间隔块
+                for (let i = 0; i < rangeItems.length; i++) {
+                    if (i === 0 && rangeItems[i].address > range.start) {
+                        // 添加起始间隔
+                        segmentItems.push({
+                            id: `gap_${range.start}`,
+                            name: 'None',
+                            address: range.start,
+                            size: rangeItems[i].address - range.start,
+                            type: 'gap'
+                        });
+                    }
+
+                    segmentItems.push(rangeItems[i]);
+
+                    if (i < rangeItems.length - 1) {
+                        const gapStart = rangeItems[i].address + rangeItems[i].size;
+                        const gapEnd = rangeItems[i + 1].address;
+                        if (gapEnd > gapStart) {
+                            segmentItems.push({
+                                id: `gap_${gapStart}`,
+                                name: 'None',
+                                address: gapStart,
+                                size: gapEnd - gapStart,
+                                type: 'gap'
+                            });
+                        }
+                    }
+                }
+
                 segments.push({
                     name: range.name,
                     items: segmentItems,
-                    minAddress: Math.min(...segmentItems.map(item => item.address)),
-                    maxAddress: Math.max(...segmentItems.map(item => item.address + item.size))
+                    minAddress: range.start,
+                    maxAddress: range.end
                 });
             }
         }
@@ -165,6 +196,14 @@ export class MemoryMapView {
                     .block-address, .block-size {
                         margin: 2px 0;
                     }
+                    .memory-block.gap {
+                        background: var(--vscode-disabledForeground);
+                        opacity: 0.5;
+                        cursor: default;
+                    }
+                    .memory-block.gap:hover {
+                        background: var(--vscode-disabledForeground);
+                    }
                 </style>
             </head>
             <body>
@@ -193,7 +232,7 @@ export class MemoryMapView {
                             
                             segment.items.forEach((item, index) => {
                                 const block = document.createElement('div');
-                                block.className = 'memory-block';
+                                block.className = 'memory-block' + (item.type === 'gap' ? ' gap' : '');
                                 block.style.top = (index * (blockHeight + 2)) + 'px';
                                 block.style.height = blockHeight + 'px';
                                 
@@ -219,12 +258,14 @@ export class MemoryMapView {
                                 block.appendChild(nameSpan);
                                 block.appendChild(infoDiv);
                                 
-                                block.onclick = () => {
-                                    vscode.postMessage({
-                                        command: 'showValue',
-                                        address: item.address
-                                    });
-                                };
+                                if (item.type !== 'gap') {
+                                    block.onclick = () => {
+                                        vscode.postMessage({
+                                            command: 'showValue',
+                                            address: item.address
+                                        });
+                                    };
+                                }
                                 
                                 memoryMap.appendChild(block);
                             });

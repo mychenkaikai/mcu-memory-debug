@@ -95,6 +95,14 @@ export function registerMemoryCommands(
             outputChannel.appendLine(`地址: ${memoryManager.formatAddress(item.address)}`);
             outputChannel.appendLine(`大小: ${memoryManager.formatSize(item.size)}`);
             outputChannel.appendLine(`值: ${value || '无法读取'}`);
+            
+            // 读取并显示内存内容
+            const content = await memoryManager.viewMemoryContent(item.address, item.size);
+            if (content) {
+                outputChannel.appendLine('\n内存内容:');
+                outputChannel.appendLine(content);
+            }
+            
             outputChannel.show(true);
         })
     );

@@ -10,8 +10,11 @@ interface MemorySegment {
 
 export class MemoryMapView {
     private panel: vscode.WebviewPanel | undefined;
+    private readonly outputChannel: vscode.OutputChannel;
 
-    constructor(private context: vscode.ExtensionContext) {}
+    constructor(private context: vscode.ExtensionContext) {
+        this.outputChannel = vscode.window.createOutputChannel('Memory Map View');
+    }
 
     public show(items: MemoryItem[]) {
         if (this.panel) {
@@ -46,7 +49,7 @@ export class MemoryMapView {
             if (message.command === 'showValue' && message.address) {
                 const item = sortedItems.find(i => i.address === message.address);
                 if (item) {
-                    vscode.commands.executeCommand('memoryExplorer.readRegister', item);
+                    vscode.commands.executeCommand('memoryExplorer.readRegister', item, this.outputChannel);
                 }
             }
         });
@@ -151,6 +154,17 @@ export class MemoryMapView {
                     button:hover {
                         background: var(--vscode-button-hoverBackground);
                     }
+                    .block-info {
+                        font-size: 1em;
+                        color: var(--vscode-descriptionForeground);
+                        margin-left: 8px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-end;
+                    }
+                    .block-address, .block-size {
+                        margin: 2px 0;
+                    }
                 </style>
             </head>
             <body>
@@ -187,12 +201,23 @@ export class MemoryMapView {
                                 nameSpan.className = 'block-name';
                                 nameSpan.textContent = item.name;
                                 
-                                const addressSpan = document.createElement('span');
-                                addressSpan.className = 'block-address';
-                                addressSpan.textContent = '0x' + item.address.toString(16).toUpperCase();
+                                const infoDiv = document.createElement('div');
+                                infoDiv.className = 'block-info';
+                                
+                                const addressRange = document.createElement('span');
+                                addressRange.className = 'block-address';
+                                addressRange.textContent = '0x' + item.address.toString(16).toUpperCase() + 
+                                                     ' - 0x' + (item.address + item.size - 1).toString(16).toUpperCase();
+                                
+                                const sizeSpan = document.createElement('span');
+                                sizeSpan.className = 'block-size';
+                                sizeSpan.textContent = item.size + ' bytes';
+                                
+                                infoDiv.appendChild(addressRange);
+                                infoDiv.appendChild(sizeSpan);
                                 
                                 block.appendChild(nameSpan);
-                                block.appendChild(addressSpan);
+                                block.appendChild(infoDiv);
                                 
                                 block.onclick = () => {
                                     vscode.postMessage({

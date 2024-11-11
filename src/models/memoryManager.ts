@@ -28,34 +28,16 @@ export class MemoryManager {
 
     async updateMemoryInfo() {
         try {
-            // 获取内存区域信息
-            const regions = await this.gdbInterface.getMemoryRegions();
-            
-            // 清除旧的内存项
-            this.memoryItems.clear();
-
-            // 添加内存区域
-            for (const region of regions) {
-                const regionItem: MemoryItem = {
-                    id: `region_${region.name.toLowerCase()}`,
-                    name: region.name,
-                    address: region.start,
-                    size: region.size,
-                    type: region.name.startsWith('APB') || region.name === 'AHB1' ? 'peripheral' : 'region',
-                    description: region.description,
-                    readable: region.readable,
-                    writable: region.writable,
-                    children: []
-                };
-
-                // 如果是外设区域，添加一些示例寄存器
-                if (regionItem.type === 'peripheral') {
-                    regionItem.children = this.createPeripheralRegisters(region.start);
+            // 获取当前工作区
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (workspaceFolder) {
+                // 查找 .elf 文件
+                const elfFiles = await vscode.workspace.findFiles('**/*.elf', '**/build/**');
+                if (elfFiles.length > 0) {
+                    await this.loadElfFile(elfFiles[0].fsPath);
                 }
-
-                this.memoryItems.set(regionItem.id, regionItem);
             }
-
+            
             // 通知视图更新
             this.eventEmitter.fire();
         } catch (error) {

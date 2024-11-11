@@ -1,0 +1,4 @@
+{
+  "extension.name": "MCU Memory Debug",
+  "extension.description": "Memory viewer for MCU debugging with QEMU and GDB"
+} 

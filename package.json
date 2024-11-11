@@ -1,0 +1,86 @@
+{
+  "name": "mcu-memory-debug",
+  "displayName": "MCU Memory Debug",
+  "description": "Memory viewer for MCU debugging with QEMU and GDB",
+  "version": "0.0.1",
+  "publisher": "your-publisher-name",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Debuggers"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "views": {
+      "debug": [
+        {
+          "id": "memoryExplorer",
+          "name": "MCU Memory Explorer"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "memoryExplorer.refresh",
+        "title": "刷新",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "memoryExplorer.readRegister",
+        "title": "读取寄存器值"
+      },
+      {
+        "command": "memoryExplorer.viewMemory",
+        "title": "查看内存内容"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "memoryExplorer.refresh",
+          "when": "view == memoryExplorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "memoryExplorer.readRegister",
+          "when": "view == memoryExplorer && viewItem == register",
+          "group": "inline"
+        },
+        {
+          "command": "memoryExplorer.viewMemory",
+          "when": "view == memoryExplorer && (viewItem == region || viewItem == peripheral)",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc -w -p ./"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.9",
+    "@types/node": "^16.11.7",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^5.42.0",
+    "@typescript-eslint/parser": "^5.42.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^8.26.0",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "elfinfo": "^0.4.0-beta"
+  }
+}

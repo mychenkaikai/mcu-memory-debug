@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { MemoryManager, MemoryItem } from '../models/memoryManager';
+import { MemoryMapView } from './memoryMapView';
 
 export class MemoryTreeProvider implements vscode.TreeDataProvider<MemoryItem> {
     private _onDidChangeTreeData = new vscode.EventEmitter<MemoryItem | undefined>();
@@ -74,7 +75,11 @@ export class MemoryTreeProvider implements vscode.TreeDataProvider<MemoryItem> {
 }
 
 // 注册命令
-export function registerMemoryCommands(context: vscode.ExtensionContext, treeProvider: MemoryTreeProvider, memoryManager: MemoryManager) {
+export function registerMemoryCommands(
+    context: vscode.ExtensionContext,
+    treeProvider: MemoryTreeProvider,
+    memoryManager: MemoryManager
+) {
     // 刷新命令
     context.subscriptions.push(
         vscode.commands.registerCommand('memoryExplorer.refresh', () => {
@@ -121,6 +126,14 @@ export function registerMemoryCommands(context: vscode.ExtensionContext, treePro
             } catch (error) {
                 vscode.window.showErrorMessage(`查看内存内容失败: ${error}`);
             }
+        })
+    );
+
+    // 显示内存布局命令
+    context.subscriptions.push(
+        vscode.commands.registerCommand('memoryExplorer.showMemoryMap', () => {
+            const memoryMapView = new MemoryMapView(context);
+            memoryMapView.show(memoryManager.getItems());
         })
     );
 } 

@@ -36,12 +36,22 @@
       {
         "command": "memoryExplorer.viewMemory",
         "title": "查看内存内容"
+      },
+      {
+        "command": "memoryExplorer.showMemoryMap",
+        "title": "显示内存布局",
+        "icon": "$(layout)"
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "memoryExplorer.refresh",
+          "when": "view == memoryExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "memoryExplorer.showMemoryMap",
           "when": "view == memoryExplorer",
           "group": "navigation"
         }
@@ -54,7 +64,7 @@
         },
         {
           "command": "memoryExplorer.viewMemory",
-          "when": "view == memoryExplorer && (viewItem == region || viewItem == peripheral)",
+          "when": "view == memoryExplorer && viewItem == region",
           "group": "inline"
         }
       ]
@@ -81,6 +91,6 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "elfinfo": "^0.4.0-beta"
+    "elf-tools": "^1.1.1"
   }
 }

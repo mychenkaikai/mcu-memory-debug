@@ -9,7 +9,7 @@ let memoryTreeProvider: MemoryTreeProvider | undefined;
 export async function activate(context: vscode.ExtensionContext) {
 	// 创建输出通道
 	outputChannel = vscode.window.createOutputChannel('MCU Memory Debug');
-	outputChannel.show(true);  // true 表示不要切换到输出面板
+	outputChannel.show(true);
 	
 	outputChannel.appendLine('MCU Memory Debug 插件开始激活');
 
@@ -17,15 +17,13 @@ export async function activate(context: vscode.ExtensionContext) {
 		const gdbInterface = new GDBInterface(outputChannel);
 		const memoryManager = new MemoryManager(gdbInterface, outputChannel);
 		
-		memoryTreeProvider = new MemoryTreeProvider(memoryManager);
-
 		// 创建树视图提供者
 		const treeProvider = new MemoryTreeProvider(memoryManager);
 		
 		// 注册树视图
 		const treeView = vscode.window.createTreeView('memoryExplorer', {
-			treeDataProvider: treeProvider,
-			showCollapseAll: true
+				treeDataProvider: treeProvider,
+				showCollapseAll: true
 		});
 
 		// 注册命令

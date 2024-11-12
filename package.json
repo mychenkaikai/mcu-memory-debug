@@ -68,6 +68,43 @@
           "group": "inline"
         }
       ]
+    },
+    "configuration": {
+      "title": "MCU Memory Debug",
+      "properties": {
+        "mcuMemoryDebug.flash": {
+          "type": "object",
+          "scope": "resource",
+          "properties": {
+            "start": {
+              "type": "string",
+              "default": "0x00000000",
+              "description": "Flash 起始地址"
+            },
+            "size": {
+              "type": "number",
+              "default": 64,
+              "description": "Flash 大小(KB)"
+            }
+          }
+        },
+        "mcuMemoryDebug.sram": {
+          "type": "object",
+          "scope": "resource",
+          "properties": {
+            "start": {
+              "type": "string",
+              "default": "0x20000000",
+              "description": "SRAM 起始地址"
+            },
+            "size": {
+              "type": "number",
+              "default": 20,
+              "description": "SRAM 大小(KB)"
+            }
+          }
+        }
+      }
     }
   },
   "scripts": {

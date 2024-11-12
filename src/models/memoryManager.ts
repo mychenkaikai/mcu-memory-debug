@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { GDBInterface } from '../debugger/gdbInterface';
 import { ElfParser, ElfSymbol } from '../debugger/elfParser';
-
+import { MemoryConfig, MemoryConfigParser } from './memoryConfig';
+import { MemorySegment } from '../views/memoryMapView';
 export interface MemoryItem {
     id: string;
     name: string;
@@ -35,10 +36,24 @@ export class MemoryManager {
         address: 0,
         size: 0
     };
+    private memoryConfig: MemoryConfig;
 
     constructor(private gdbInterface: GDBInterface, outputChannel: vscode.OutputChannel) {
         this.elfParser = new ElfParser(outputChannel);
         this.outputChannel = outputChannel;
+        this.memoryConfig = {
+            flash: {
+                start: 0x00000000,
+                end: 0x0000FFFF,
+                name: 'Flash Memory'
+            },
+            sram: {
+                start: 0x20000000,
+                end: 0x2000FFFF,
+                name: 'SRAM'
+            }
+        };
+        this.initMemoryConfig();
     }
 
     public onDidChangeMemory = this.eventEmitter.event;
@@ -286,5 +301,115 @@ export class MemoryManager {
         } catch (error) {
             this.outputChannel.appendLine(`读取堆信息失败: ${error}`);
         }
+    }
+
+    private formatMemoryConfigToHex(config: MemoryConfig): any {
+        return {
+            flash: {
+                start: `0x${config.flash.start.toString(16).toUpperCase().padStart(8, '0')}`,
+                end: `0x${config.flash.end.toString(16).toUpperCase().padStart(8, '0')}`,
+                name: config.flash.name
+            },
+            sram: {
+                start: `0x${config.sram.start.toString(16).toUpperCase().padStart(8, '0')}`,
+                end: `0x${config.sram.end.toString(16).toUpperCase().padStart(8, '0')}`,
+                name: config.sram.name
+            }
+        };
+    }
+
+    private async initMemoryConfig() {
+        try {
+            this.memoryConfig = await this.loadMemoryConfig();
+            this.outputChannel.appendLine('内存配置加载成功');
+            this.outputChannel.appendLine(`内存配置: ${JSON.stringify(this.formatMemoryConfigToHex(this.memoryConfig), null, 2)}`);
+            this.eventEmitter.fire();
+        } catch (error) {
+            this.outputChannel.appendLine(`加载内存配置失败: ${error}`);
+        }
+    }
+
+    private async loadMemoryConfig(): Promise<MemoryConfig> {
+        // 获取当前工作区
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            throw new Error('未找到工作区');
+        }
+
+        // 获取工作区特定的配置
+        const config = vscode.workspace.getConfiguration('mcuMemoryDebug', workspaceFolder.uri);
+        const flashStart = parseInt(config.get<string>('flash.start') || '0x00000000', 16);
+        const flashSize = Number(config.get<number>('flash.size') || 64) * 1024;
+        const sramStart = parseInt(config.get<string>('sram.start') || '0x20000000', 16);
+        const sramSize = Number(config.get<number>('sram.size') || 20) * 1024;
+        
+        return {
+            flash: {
+                start: flashStart,
+                end: flashStart + flashSize - 1,
+                name: 'Flash Memory'
+            },
+            sram: {
+                start: sramStart,
+                end: sramStart + sramSize - 1,
+                name: 'SRAM'
+            }
+        };
+    }
+
+    private segmentMemory(items: MemoryItem[]): MemorySegment[] {
+        const segments: MemorySegment[] = [];
+        const segmentRanges = [
+            this.memoryConfig.flash,
+            this.memoryConfig.sram
+        ];
+
+        for (const range of segmentRanges) {
+            const segmentItems: MemoryItem[] = [];
+            const rangeItems = items.filter(
+                item => item.address >= range.start && item.address <= range.end
+            ).sort((a, b) => a.address - b.address);
+
+            if (rangeItems.length > 0) {
+                // 添加间隔块
+                for (let i = 0; i < rangeItems.length; i++) {
+                    if (i === 0 && rangeItems[i].address > range.start) {
+                        // 添加起始间隔
+                        segmentItems.push({
+                            id: `gap_${range.start}`,
+                            name: 'None',
+                            address: range.start,
+                            size: rangeItems[i].address - range.start,
+                            type: 'gap'
+                        });
+                    }
+
+                    segmentItems.push(rangeItems[i]);
+
+                    if (i < rangeItems.length - 1) {
+                        const gapStart = rangeItems[i].address + rangeItems[i].size;
+                        const gapEnd = rangeItems[i + 1].address;
+                        if (gapEnd > gapStart) {
+                            segmentItems.push({
+                                id: `gap_${gapStart}`,
+                                name: 'None',
+                                address: gapStart,
+                                size: gapEnd - gapStart,
+                                type: 'gap'
+                            });
+                        }
+                    }
+                }
+
+                segments.push({
+                    name: range.name,
+                    items: segmentItems,
+                    minAddress: range.start,
+                    maxAddress: range.end
+                });
+            }
+        }
+
+        return segments;
     }
 } 

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { MemoryItem } from '../models/memoryManager';
 
-interface MemorySegment {
+export interface MemorySegment {
     name: string;
     items: MemoryItem[];
     minAddress: number;

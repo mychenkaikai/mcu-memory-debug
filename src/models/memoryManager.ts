@@ -18,9 +18,11 @@ export class MemoryManager {
     private memoryItems: Map<string, MemoryItem> = new Map();
     private eventEmitter = new vscode.EventEmitter<void>();
     private elfParser: ElfParser;
+    private outputChannel: vscode.OutputChannel;
 
     constructor(private gdbInterface: GDBInterface, outputChannel: vscode.OutputChannel) {
         this.elfParser = new ElfParser(outputChannel);
+        this.outputChannel = outputChannel;
     }
 
     public onDidChangeMemory = this.eventEmitter.event;
@@ -123,7 +125,10 @@ export class MemoryManager {
 
     async loadElfFile(filePath: string) {
         try {
+            this.outputChannel.appendLine(`正在加载 ELF 文件: ${filePath}`);
             const symbols = await this.elfParser.parseFile(filePath);
+            
+            this.outputChannel.appendLine(`成功解析 ELF 文件，找到 ${symbols.length} 个符号`);
             
             // 为每个符号创建内存项
             for (const symbol of symbols) {
@@ -143,7 +148,11 @@ export class MemoryManager {
 
             this.eventEmitter.fire();
         } catch (error) {
-            console.error('加载 ELF 文件失败:', error);
+            this.outputChannel.appendLine(`加载 ELF 文件失败: ${error}`);
+            if (error instanceof Error) {
+                this.outputChannel.appendLine(`错误堆栈: ${error.stack}`);
+            }
+            throw error;
         }
     }
 } 

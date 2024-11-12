@@ -42,10 +42,32 @@ export async function activate(context: vscode.ExtensionContext) {
 					// 获取当前工作区
 					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
 					if (workspaceFolder) {
-						// 查找 .elf 文件
-						const elfFiles = await vscode.workspace.findFiles('**/*.elf', '**/build/**');
+						// 搜索所有 .elf 文件
+						const elfFiles = await vscode.workspace.findFiles('**/*.elf');
+						
 						if (elfFiles.length > 0) {
-							await memoryManager.loadElfFile(elfFiles[0].fsPath);
+							// 如果找到多个 .elf 文件，让用户选择
+							if (elfFiles.length > 1) {
+								const items = elfFiles.map(file => ({
+									label: vscode.workspace.asRelativePath(file),
+									description: file.fsPath,
+									file: file
+								}));
+								
+								const selected = await vscode.window.showQuickPick(items, {
+									placeHolder: '请选择要加载的 ELF 文件'
+								});
+								
+								if (selected) {
+									await memoryManager.loadElfFile(selected.file.fsPath);
+								}
+							} else {
+								// 只有一个文件时直接加载
+								await memoryManager.loadElfFile(elfFiles[0].fsPath);
+							}
+						} else {
+							outputChannel.appendLine('未找到 ELF 文件');
+							vscode.window.showWarningMessage('未在工作区中找到 ELF 文件');
 						}
 					}
 				}

@@ -22,7 +22,9 @@ export class MemoryTreeProvider implements vscode.TreeDataProvider<MemoryItem> {
     getTreeItem(element: MemoryItem): vscode.TreeItem {
         const treeItem = new vscode.TreeItem(
             element.name,
-            element.children?.length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+            element.children?.length 
+                ? vscode.TreeItemCollapsibleState.Expanded 
+                : vscode.TreeItemCollapsibleState.None
         );
 
         // 设置图标
@@ -30,41 +32,38 @@ export class MemoryTreeProvider implements vscode.TreeDataProvider<MemoryItem> {
             case 'region':
                 treeItem.iconPath = new vscode.ThemeIcon('symbol-module');
                 break;
-            case 'peripheral':
-                treeItem.iconPath = new vscode.ThemeIcon('circuit-board');
-                break;
             case 'variable':
                 treeItem.iconPath = new vscode.ThemeIcon('symbol-variable');
+                break;
+            case 'heap_block':
+                treeItem.iconPath = new vscode.ThemeIcon('symbol-field');
                 break;
         }
 
         // 设置描述
-        const addressStr = this.memoryManager.formatAddress(element.address);
-        const sizeStr = this.memoryManager.formatSize(element.size);
-        const accessStr = `${element.readable ? 'R' : '-'}${element.writable ? 'W' : '-'}`;
-        
-        if (element.type === 'variable') {
-            treeItem.description = addressStr;
-            treeItem.contextValue = 'register';
-            treeItem.command = {
-                command: 'memoryExplorer.readRegister',
-                title: '读取变量值',
-                arguments: [element, this.outputChannel]
-            };
-        } else {
-            treeItem.description = `${addressStr} | ${sizeStr} | ${accessStr}`;
+        if (element.type !== 'region') {
+            const addressStr = this.memoryManager.formatAddress(element.address);
+            const sizeStr = this.memoryManager.formatSize(element.size);
+            treeItem.description = `${addressStr} | ${sizeStr}`;
             treeItem.contextValue = element.type;
+            
+            if (element.type === 'variable' || element.type === 'heap_block') {
+                treeItem.command = {
+                    command: 'memoryExplorer.readRegister',
+                    title: '读取值',
+                    arguments: [element, this.outputChannel]
+                };
+            }
         }
 
         return treeItem;
     }
 
     getChildren(element?: MemoryItem): Thenable<MemoryItem[]> {
-        if (element) {
-            return Promise.resolve(element.children || []);
-        } else {
-            return Promise.resolve(this.memoryManager.getItems());
+        if (!element) {
+            return Promise.resolve(this.memoryManager.getMemoryRegions());
         }
+        return Promise.resolve(element.children || []);
     }
 
     // 获取父节点
@@ -107,7 +106,7 @@ export function registerMemoryCommands(
         })
     );
 
-    // 查看内存内容命令
+    // 查看内存��容命令
     context.subscriptions.push(
         vscode.commands.registerCommand('memoryExplorer.viewMemory', async (item: MemoryItem) => {
             try {

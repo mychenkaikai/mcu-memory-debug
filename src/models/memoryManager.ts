@@ -27,6 +27,10 @@ interface HeapInfoConfig {
     size: number;
 }
 
+interface MemoryRegion extends MemoryItem {
+    children: MemoryItem[];
+}
+
 export class MemoryManager {
     private memoryItems: Map<string, MemoryItem> = new Map();
     private eventEmitter = new vscode.EventEmitter<void>();
@@ -411,5 +415,47 @@ export class MemoryManager {
         }
 
         return segments;
+    }
+
+    getMemoryRegions(): MemoryItem[] {
+        const items = Array.from(this.memoryItems.values());
+        
+        // 创建 Flash 区域
+        const flashItems = items.filter(item => 
+            item.address >= this.memoryConfig.flash.start && 
+            item.address <= this.memoryConfig.flash.end
+        );
+        
+        // 创建 SRAM 区域
+        const sramItems = items.filter(item => 
+            item.address >= this.memoryConfig.sram.start && 
+            item.address <= this.memoryConfig.sram.end
+        );
+        
+        return [{
+            id: 'memory_regions',
+            name: 'Memory Regions',
+            address: 0,  // 根节点地址设为0
+            size: 0,     // 根节点大小设为0
+            type: 'region',
+            children: [
+                {
+                    id: 'flash',
+                    name: this.memoryConfig.flash.name,
+                    address: this.memoryConfig.flash.start,
+                    size: this.memoryConfig.flash.end - this.memoryConfig.flash.start + 1,
+                    type: 'region',
+                    children: flashItems
+                },
+                {
+                    id: 'sram',
+                    name: this.memoryConfig.sram.name,
+                    address: this.memoryConfig.sram.start,
+                    size: this.memoryConfig.sram.end - this.memoryConfig.sram.start + 1,
+                    type: 'region',
+                    children: sramItems
+                }
+            ]
+        }];
     }
 } 

@@ -34,24 +34,14 @@
         "title": "读取寄存器值"
       },
       {
-        "command": "memoryExplorer.viewMemory",
-        "title": "查看内存内容"
-      },
-      {
-        "command": "memoryExplorer.showMemoryMap",
-        "title": "显示内存布局",
-        "icon": "$(layout)"
+        "command": "memoryExplorer.showHeapLayout",
+        "title": "显示内存布局"
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "memoryExplorer.refresh",
-          "when": "view == memoryExplorer",
-          "group": "navigation"
-        },
-        {
-          "command": "memoryExplorer.showMemoryMap",
           "when": "view == memoryExplorer",
           "group": "navigation"
         }
@@ -63,8 +53,8 @@
           "group": "inline"
         },
         {
-          "command": "memoryExplorer.viewMemory",
-          "when": "view == memoryExplorer && viewItem == region",
+          "command": "memoryExplorer.showHeapLayout",
+          "when": "view == memoryExplorer && viewItem == memory_region",
           "group": "inline"
         }
       ]

@@ -31,6 +31,7 @@ export class MemoryTreeProvider implements vscode.TreeDataProvider<MemoryItem> {
         switch (element.type) {
             case 'region':
                 treeItem.iconPath = new vscode.ThemeIcon('symbol-module');
+                treeItem.contextValue = 'memory_region';
                 break;
             case 'variable':
                 treeItem.iconPath = new vscode.ThemeIcon('symbol-variable');
@@ -54,6 +55,11 @@ export class MemoryTreeProvider implements vscode.TreeDataProvider<MemoryItem> {
                     arguments: [element, this.outputChannel]
                 };
             }
+        } else if (element.type === 'region' && element.address !== undefined && element.size !== undefined) {
+            // 为区域添加地址范围描述
+            const startAddr = this.memoryManager.formatAddress(element.address);
+            const endAddr = this.memoryManager.formatAddress(element.address + element.size - 1);
+            treeItem.description = `${startAddr} - ${endAddr}`;
         }
 
         return treeItem;
@@ -79,14 +85,13 @@ export function registerMemoryCommands(
     treeProvider: MemoryTreeProvider,
     memoryManager: MemoryManager
 ) {
-    // 刷新命令
+    // 注册原有命令
     context.subscriptions.push(
         vscode.commands.registerCommand('memoryExplorer.refresh', () => {
-            memoryManager.updateMemoryInfo();
+            treeProvider.refresh();
         })
     );
 
-    // 读取寄存器值命令
     context.subscriptions.push(
         vscode.commands.registerCommand('memoryExplorer.readRegister', async (item: MemoryItem, outputChannel: vscode.OutputChannel) => {
             const value = await memoryManager.getItemValue(item);
@@ -106,41 +111,11 @@ export function registerMemoryCommands(
         })
     );
 
-    // 查看内存��容命令
+    // 添加新的堆内存布局命令
     context.subscriptions.push(
-        vscode.commands.registerCommand('memoryExplorer.viewMemory', async (item: MemoryItem) => {
-            try {
-                // 创建新的输出通道来显示内存内容
-                const channel = vscode.window.createOutputChannel(`Memory: ${item.name}`);
-                channel.show(true);
-                channel.appendLine(`=== ${item.name} (${item.description}) ===`);
-                channel.appendLine(`基地址: ${memoryManager.formatAddress(item.address)}`);
-                channel.appendLine(`大小: ${memoryManager.formatSize(item.size)}`);
-                channel.appendLine(`权限: ${item.readable ? 'R' : '-'}${item.writable ? 'W' : '-'}`);
-                channel.appendLine('');
-
-                // 分批读取内存内容
-                const batchSize = 64; // 每次读取 64 字节
-                const totalSize = Math.min(256, item.size); // 最多读取 256 字节
-                
-                for (let offset = 0; offset < totalSize; offset += batchSize) {
-                    const size = Math.min(batchSize, totalSize - offset);
-                    const content = await memoryManager.viewMemoryContent(item.address + offset, size);
-                    if (content) {
-                        channel.appendLine(content);
-                    }
-                }
-            } catch (error) {
-                vscode.window.showErrorMessage(`查看内存内容失败: ${error}`);
-            }
-        })
-    );
-
-    // 显示内存布局命令
-    context.subscriptions.push(
-        vscode.commands.registerCommand('memoryExplorer.showMemoryMap', () => {
+        vscode.commands.registerCommand('memoryExplorer.showHeapLayout', (item: MemoryItem) => {
             const memoryMapView = new MemoryMapView(context);
-            memoryMapView.show(memoryManager.getItems());
+            memoryMapView.show(item);
         })
     );
 } 

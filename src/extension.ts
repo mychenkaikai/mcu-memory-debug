@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
+import { GDBInterface } from './debugger/gdbInterface';
 import { MemoryTreeProvider, registerMemoryCommands } from './views/memoryTreeProvider';
 import { MemoryManager } from './models/memoryManager';
-import { GDBInterface } from './debugger/gdbInterface';
-
 let outputChannel: vscode.OutputChannel;
 let memoryTreeProvider: MemoryTreeProvider | undefined;
 
@@ -26,7 +25,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				showCollapseAll: true
 		});
 
-		// 注册命令
+		// 注册所有命令
 		registerMemoryCommands(context, treeProvider, memoryManager);
 
 		// 将树视图添加到订阅列表

@@ -16,13 +16,13 @@ export class MemoryMapView {
         this.outputChannel = vscode.window.createOutputChannel('Memory Map View');
     }
 
-    public show(items: MemoryItem[]) {
+    public show(region: MemoryItem) {
         if (this.panel) {
             this.panel.reveal();
         } else {
             this.panel = vscode.window.createWebviewPanel(
                 'memoryMap',
-                'Memory Layout',
+                `Memory Layout - ${region.name}`,
                 vscode.ViewColumn.Two,
                 {
                     enableScripts: true,
@@ -30,88 +30,88 @@ export class MemoryMapView {
                 }
             );
 
+            // 添加面板关闭事件处理
             this.panel.onDidDispose(() => {
                 this.panel = undefined;
             });
         }
 
-        // 按地址排序并分段
+        // 确保有正确的地址范围
+        if (region.address === undefined || region.size === undefined) {
+            vscode.window.showErrorMessage('无效的内存区域信息');
+            return;
+        }
+
+        const items = region.children || [];
         const sortedItems = items
             .filter(item => item.type === 'variable' || item.type === 'heap_block')
             .sort((a, b) => a.address - b.address);
 
-        // 将内存分段
-        const segments: MemorySegment[] = this.segmentMemory(sortedItems);
-        this.panel.webview.html = this.getWebviewContent(segments);
+        // 添加间隔块
+        const completeItems: MemoryItem[] = [];
+        
+        // 添加起始间隔（如果需要）
+        if (sortedItems.length > 0 && sortedItems[0].address > region.address) {
+            completeItems.push({
+                id: `gap_start_${region.address}`,
+                name: 'Unused',
+                address: region.address,
+                size: sortedItems[0].address - region.address,
+                type: 'gap'
+            });
+        }
 
-        // 处理 webview 消息
-        this.panel.webview.onDidReceiveMessage(async message => {
-            if (message.command === 'showValue' && message.address) {
-                const item = sortedItems.find(i => i.address === message.address);
-                if (item) {
-                    vscode.commands.executeCommand('memoryExplorer.readRegister', item, this.outputChannel);
+        // 添加项目间的间隔
+        for (let i = 0; i < sortedItems.length; i++) {
+            completeItems.push(sortedItems[i]);
+            
+            if (i < sortedItems.length - 1) {
+                const currentEnd = sortedItems[i].address + sortedItems[i].size;
+                const nextStart = sortedItems[i + 1].address;
+                
+                if (nextStart > currentEnd) {
+                    completeItems.push({
+                        id: `gap_${currentEnd}`,
+                        name: 'Unused',
+                        address: currentEnd,
+                        size: nextStart - currentEnd,
+                        type: 'gap'
+                    });
                 }
             }
-        });
-    }
+        }
 
-    private segmentMemory(items: MemoryItem[]): MemorySegment[] {
-        const segments: MemorySegment[] = [];
-        const segmentRanges = [
-            { start: 0x00000000, end: 0x0000FFFF, name: 'Flash Memory' },
-            { start: 0x20000000, end: 0x2000FFFF, name: 'SRAM' }
-        ];
-
-        for (const range of segmentRanges) {
-            const segmentItems: MemoryItem[] = [];
-            const rangeItems = items.filter(
-                item => item.address >= range.start && item.address <= range.end
-            ).sort((a, b) => a.address - b.address);
-
-            if (rangeItems.length > 0) {
-                // 添加间隔块
-                for (let i = 0; i < rangeItems.length; i++) {
-                    if (i === 0 && rangeItems[i].address > range.start) {
-                        // 添加起始间隔
-                        segmentItems.push({
-                            id: `gap_${range.start}`,
-                            name: 'None',
-                            address: range.start,
-                            size: rangeItems[i].address - range.start,
-                            type: 'gap'
-                        });
-                    }
-
-                    segmentItems.push(rangeItems[i]);
-
-                    if (i < rangeItems.length - 1) {
-                        const gapStart = rangeItems[i].address + rangeItems[i].size;
-                        const gapEnd = rangeItems[i + 1].address;
-                        if (gapEnd > gapStart) {
-                            segmentItems.push({
-                                id: `gap_${gapStart}`,
-                                name: 'None',
-                                address: gapStart,
-                                size: gapEnd - gapStart,
-                                type: 'gap'
-                            });
-                        }
-                    }
-                }
-
-                segments.push({
-                    name: range.name,
-                    items: segmentItems,
-                    minAddress: range.start,
-                    maxAddress: range.end
+        // 添加结束间隔（如果需要）
+        if (sortedItems.length > 0) {
+            const lastItem = sortedItems[sortedItems.length - 1];
+            const lastEnd = lastItem.address + lastItem.size;
+            const regionEnd = region.address + region.size - 1;
+            
+            if (regionEnd > lastEnd) {
+                completeItems.push({
+                    id: `gap_end_${lastEnd}`,
+                    name: 'Unused',
+                    address: lastEnd,
+                    size: regionEnd - lastEnd + 1,
+                    type: 'gap'
                 });
             }
         }
 
-        return segments;
+        this.panel.webview.html = this.getWebviewContent({
+            name: region.name,
+            items: completeItems,
+            minAddress: region.address,
+            maxAddress: region.address + region.size - 1
+        });
+
+        // 调试输出
+        this.outputChannel.appendLine(`显示内存区域: ${region.name}`);
+        this.outputChannel.appendLine(`地址范围: 0x${region.address.toString(16)} - 0x${(region.address + region.size - 1).toString(16)}`);
+        this.outputChannel.appendLine(`包含 ${completeItems.length} 个项目（包括间隔）`);
     }
 
-    private getWebviewContent(segments: MemorySegment[]): string {
+    private getWebviewContent(segments: MemorySegment): string {
         return `
             <!DOCTYPE html>
             <html>
@@ -224,12 +224,10 @@ export class MemoryMapView {
                     <span id="scale">间距: 30px</span>
                 </div>
                 <div id="container">
-                    ${segments.map((segment, index) => `
-                        <div class="segment">
-                            <div class="segment-title">${segment.name} (0x${segment.minAddress.toString(16).toUpperCase()} - 0x${segment.maxAddress.toString(16).toUpperCase()})</div>
-                            <div id="memoryMap${index}" class="memory-map"></div>
-                        </div>
-                    `).join('')}
+                    <div class="segment">
+                        <div class="segment-title">${segments.name} (0x${segments.minAddress.toString(16).toUpperCase()} - 0x${segments.maxAddress.toString(16).toUpperCase()})</div>
+                        <div id="memoryMap" class="memory-map"></div>
+                    </div>
                 </div>
                 <script>
                     const vscode = acquireVsCodeApi();
@@ -237,52 +235,47 @@ export class MemoryMapView {
                     let blockHeight = 30;
 
                     function updateMemoryMap() {
-                        segments.forEach((segment, segmentIndex) => {
-                            const memoryMap = document.getElementById('memoryMap' + segmentIndex);
-                            memoryMap.innerHTML = '';
+                        segments.items.forEach((item, index) => {
+                            const block = document.createElement('div');
+                            block.className = 'memory-block' + 
+                                (item.type === 'gap' ? ' gap' : 
+                                 item.type === 'heap_block' ? ' heap_block' : 
+                                 item.type === 'variable' ? ' variable' : '');
+                            block.style.top = (index * (blockHeight + 2)) + 'px';
+                            block.style.height = blockHeight + 'px';
                             
-                            segment.items.forEach((item, index) => {
-                                const block = document.createElement('div');
-                                block.className = 'memory-block' + 
-                                    (item.type === 'gap' ? ' gap' : 
-                                     item.type === 'heap_block' ? ' heap_block' : 
-                                     item.type === 'variable' ? ' variable' : '');
-                                block.style.top = (index * (blockHeight + 2)) + 'px';
-                                block.style.height = blockHeight + 'px';
-                                
-                                const nameSpan = document.createElement('span');
-                                nameSpan.className = 'block-name';
-                                nameSpan.textContent = item.name;
-                                
-                                const infoDiv = document.createElement('div');
-                                infoDiv.className = 'block-info';
-                                
-                                const addressRange = document.createElement('span');
-                                addressRange.className = 'block-address';
-                                addressRange.textContent = '0x' + item.address.toString(16).toUpperCase() + 
-                                                     ' - 0x' + (item.address + item.size - 1).toString(16).toUpperCase();
-                                
-                                const sizeSpan = document.createElement('span');
-                                sizeSpan.className = 'block-size';
-                                sizeSpan.textContent = item.size + ' bytes';
-                                
-                                infoDiv.appendChild(addressRange);
-                                infoDiv.appendChild(sizeSpan);
-                                
-                                block.appendChild(nameSpan);
-                                block.appendChild(infoDiv);
-                                
-                                if (item.type !== 'gap') {
-                                    block.onclick = () => {
-                                        vscode.postMessage({
-                                            command: 'showValue',
-                                            address: item.address
-                                        });
-                                    };
-                                }
-                                
-                                memoryMap.appendChild(block);
-                            });
+                            const nameSpan = document.createElement('span');
+                            nameSpan.className = 'block-name';
+                            nameSpan.textContent = item.name;
+                            
+                            const infoDiv = document.createElement('div');
+                            infoDiv.className = 'block-info';
+                            
+                            const addressRange = document.createElement('span');
+                            addressRange.className = 'block-address';
+                            addressRange.textContent = '0x' + item.address.toString(16).toUpperCase() + 
+                                                         ' - 0x' + (item.address + item.size - 1).toString(16).toUpperCase();
+                            
+                            const sizeSpan = document.createElement('span');
+                            sizeSpan.className = 'block-size';
+                            sizeSpan.textContent = item.size + ' bytes';
+                            
+                            infoDiv.appendChild(addressRange);
+                            infoDiv.appendChild(sizeSpan);
+                            
+                            block.appendChild(nameSpan);
+                            block.appendChild(infoDiv);
+                            
+                            if (item.type !== 'gap') {
+                                block.onclick = () => {
+                                    vscode.postMessage({
+                                        command: 'showValue',
+                                        address: item.address
+                                    });
+                                };
+                            }
+                            
+                            document.getElementById('memoryMap').appendChild(block);
                         });
                     }
 

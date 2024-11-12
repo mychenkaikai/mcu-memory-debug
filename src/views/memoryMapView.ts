@@ -37,7 +37,7 @@ export class MemoryMapView {
 
         // 按地址排序并分段
         const sortedItems = items
-            .filter(item => item.type === 'variable')
+            .filter(item => item.type === 'variable' || item.type === 'heap_block')
             .sort((a, b) => a.address - b.address);
 
         // 将内存分段
@@ -204,6 +204,17 @@ export class MemoryMapView {
                     .memory-block.gap:hover {
                         background: var(--vscode-disabledForeground);
                     }
+                    .memory-block.heap_block {
+                        background: #FFA500;
+                        border: 1px solid #FF8C00;
+                    }
+                    .memory-block.heap_block:hover {
+                        background: #FF8C00;
+                    }
+                    .memory-block.variable {
+                        background: var(--vscode-button-background);
+                        border: 1px solid var(--vscode-button-border);
+                    }
                 </style>
             </head>
             <body>
@@ -232,7 +243,10 @@ export class MemoryMapView {
                             
                             segment.items.forEach((item, index) => {
                                 const block = document.createElement('div');
-                                block.className = 'memory-block' + (item.type === 'gap' ? ' gap' : '');
+                                block.className = 'memory-block' + 
+                                    (item.type === 'gap' ? ' gap' : 
+                                     item.type === 'heap_block' ? ' heap_block' : 
+                                     item.type === 'variable' ? ' variable' : '');
                                 block.style.top = (index * (blockHeight + 2)) + 'px';
                                 block.style.height = blockHeight + 'px';
                                 

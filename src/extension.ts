@@ -70,6 +70,22 @@ export async function activate(context: vscode.ExtensionContext) {
 							vscode.window.showWarningMessage('未在工作区中找到 ELF 文件');
 						}
 					}
+
+					// 添加定期读取堆信息的功能
+					const heapInfoInterval = setInterval(async () => {
+						if (vscode.debug.activeDebugSession) {
+							await memoryManager.readHeapInfo();
+						} else {
+							clearInterval(heapInfoInterval);
+						}
+					}, 1000); // 每秒更新一次
+					
+					// 确保在调试会话结束时清理定时器
+					context.subscriptions.push(
+						vscode.debug.onDidTerminateDebugSession(() => {
+							clearInterval(heapInfoInterval);
+						})
+					);
 				}
 			})
 		);

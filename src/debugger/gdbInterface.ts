@@ -184,4 +184,31 @@ export class GDBInterface {
     async getMemoryRegions(): Promise<MemoryRegion[]> {
         return this.memoryRegions;
     }
+
+    async evaluateExpression(expression: string): Promise<number> {
+        try {
+            const session = vscode.debug.activeDebugSession;
+            if (!session) {
+                throw new Error('没有活动的调试会话');
+            }
+
+            const response = await session.customRequest('evaluate', {
+                expression: expression,
+                context: 'watch'
+            });
+
+            // GDB 返回的结果可能是十六进制字符串，需要转换为数字
+            const value = response.result;
+            if (typeof value === 'string') {
+                if (value.startsWith('0x')) {
+                    return parseInt(value.slice(2), 16);
+                }
+                return parseInt(value);
+            }
+            return value;
+        } catch (error) {
+            this.outputChannel.appendLine(`表达式求值失败: ${error}`);
+            throw error;
+        }
+    }
 } 

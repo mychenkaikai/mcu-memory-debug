@@ -3,7 +3,11 @@
   "displayName": "MCU Memory Debug",
   "description": "Memory viewer for MCU debugging with GDB",
   "version": "0.0.1",
-  "publisher": "cyk",
+  "publisher": "522293342",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mychenkaikai/mcu-memory-debug.git"
+  },
   "license": "Apache-2.0",
   "engines": {
     "vscode": "^1.80.0"

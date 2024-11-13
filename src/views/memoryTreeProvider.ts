@@ -85,12 +85,7 @@ export function registerMemoryCommands(
     treeProvider: MemoryTreeProvider,
     memoryManager: MemoryManager
 ) {
-    // 注册原有命令
-    context.subscriptions.push(
-        vscode.commands.registerCommand('memoryExplorer.refresh', () => {
-            treeProvider.refresh();
-        })
-    );
+
 
     context.subscriptions.push(
         vscode.commands.registerCommand('memoryExplorer.readRegister', async (item: MemoryItem, outputChannel: vscode.OutputChannel) => {

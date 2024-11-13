@@ -458,4 +458,8 @@ export class MemoryManager {
             ]
         }];
     }
+
+    public fireDidChangeEvent(): void {
+        this.eventEmitter.fire();
+    }
 } 

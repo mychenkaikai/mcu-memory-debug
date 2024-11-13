@@ -70,22 +70,39 @@ export async function activate(context: vscode.ExtensionContext) {
 							vscode.window.showWarningMessage('未在工作区中找到 ELF 文件');
 						}
 					}
+				}
+			})
+		);
 
-					// 添加定期读取堆信息的功能
-					const heapInfoInterval = setInterval(async () => {
-						if (vscode.debug.activeDebugSession) {
-							await memoryManager.readHeapInfo();
-						} else {
-							clearInterval(heapInfoInterval);
-						}
-					}, 1000); // 每秒更新一次
-					
-					// 确保在调试会话结束时清理定时器
-					context.subscriptions.push(
-						vscode.debug.onDidTerminateDebugSession(() => {
-							clearInterval(heapInfoInterval);
-						})
-					);
+		// 然后再注册命令
+		let refreshCommand = vscode.commands.registerCommand('memoryExplorer.refresh', async () => {
+			if (vscode.debug.activeDebugSession) {
+				await memoryManager.readHeapInfo();
+				memoryManager.fireDidChangeEvent();
+			} else {
+				vscode.window.showInformationMessage('请先启动调试会话');
+			}
+		});
+
+		context.subscriptions.push(refreshCommand);
+
+		// 在 activate 函数中添加断点事件监听
+		context.subscriptions.push(
+			vscode.debug.onDidChangeBreakpoints(async () => {
+				if (vscode.debug.activeDebugSession) {
+					await memoryManager.readHeapInfo();
+					memoryManager.fireDidChangeEvent();
+				}
+			})
+		);
+
+		// 监听调试器停止事件(当命中断点或暂停时触发)
+		context.subscriptions.push(
+			vscode.debug.onDidChangeActiveStackItem(async (stackItem) => {
+				// 当有活动的调试会话和堆栈项时,说明程序已停止
+				if (vscode.debug.activeDebugSession && stackItem) {
+					await memoryManager.readHeapInfo();
+					memoryManager.fireDidChangeEvent();
 				}
 			})
 		);

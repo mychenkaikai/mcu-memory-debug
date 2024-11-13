@@ -9,11 +9,19 @@ export interface MemorySegment {
 }
 
 export class MemoryMapView {
+    private static instance: MemoryMapView | null = null;
     private panel: vscode.WebviewPanel | undefined;
     private readonly outputChannel: vscode.OutputChannel;
 
-    constructor(private context: vscode.ExtensionContext) {
+    private constructor() {
         this.outputChannel = vscode.window.createOutputChannel('Memory Map View');
+    }
+
+    public static getInstance(): MemoryMapView {
+        if (!MemoryMapView.instance) {
+            MemoryMapView.instance = new MemoryMapView();
+        }
+        return MemoryMapView.instance;
     }
 
     public show(region: MemoryItem) {

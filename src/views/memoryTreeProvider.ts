@@ -114,7 +114,7 @@ export function registerMemoryCommands(
     // 添加新的堆内存布局命令
     context.subscriptions.push(
         vscode.commands.registerCommand('memoryExplorer.showHeapLayout', (item: MemoryItem) => {
-            const memoryMapView = new MemoryMapView(context);
+            const memoryMapView = MemoryMapView.getInstance();
             memoryMapView.show(item);
         })
     );

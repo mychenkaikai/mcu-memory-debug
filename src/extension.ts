@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { GDBInterface } from './debugger/gdbInterface';
 import { MemoryTreeProvider, registerMemoryCommands } from './views/memoryTreeProvider';
 import { MemoryManager } from './models/memoryManager';
+import { MemoryMapView } from './views/memoryMapView';
 let outputChannel: vscode.OutputChannel;
 let memoryTreeProvider: MemoryTreeProvider | undefined;
 

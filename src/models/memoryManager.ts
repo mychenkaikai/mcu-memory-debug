@@ -195,8 +195,8 @@ export class MemoryManager {
         const blocks: HeapBlock[] = [];
         try {
             // 调试输出
-            this.outputChannel.appendLine('开始解析堆块数据:');
-            this.outputChannel.appendLine(this.gdbInterface.formatMemoryContent(0x20000070, data));
+            // this.outputChannel.appendLine('开始解析堆块数据:');
+            // this.outputChannel.appendLine(this.gdbInterface.formatMemoryContent(0x20000070, data));
 
             let offset = 0;
             while (offset < data.length) {
@@ -294,11 +294,11 @@ export class MemoryManager {
                 this.outputChannel.appendLine(`添加堆块: ${JSON.stringify(heapItem, null, 2)}`);
             }
             
-            // 输出所有内存项的信息
-            this.outputChannel.appendLine('当前所有内存项:');
-            for (const [id, item] of this.memoryItems.entries()) {
-                this.outputChannel.appendLine(`${id}: ${item.type} @ 0x${item.address.toString(16)} (${item.size} bytes)`);
-            }
+            // // 输出所有内存项的信息
+            // this.outputChannel.appendLine('当前所有内存项:');
+            // for (const [id, item] of this.memoryItems.entries()) {
+            //     this.outputChannel.appendLine(`${id}: ${item.type} @ 0x${item.address.toString(16)} (${item.size} bytes)`);
+            // }
             
             this.eventEmitter.fire();
             

@@ -1,9 +1,10 @@
 {
   "name": "mcu-memory-debug",
   "displayName": "MCU Memory Debug",
-  "description": "Memory viewer for MCU debugging with QEMU and GDB",
+  "description": "Memory viewer for MCU debugging with GDB",
   "version": "0.0.1",
-  "publisher": "your-publisher-name",
+  "publisher": "cyk",
+  "license": "Apache-2.0",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -118,6 +119,7 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "elf-tools": "^1.1.1"
+    "elf-tools": "^1.1.1",
+    "elfinfo": "0.4.0-beta"
   }
 }

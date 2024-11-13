@@ -1,71 +1,50 @@
-# mcu-memory-debug README
+# MCU Memory Debug
 
-This is the README for your extension "mcu-memory-debug". After writing up a brief description, we recommend including the following sections.
+MCU Memory Debug 是一个用于 MCU 调试的 VSCode 扩展，它提供了内存查看和分析功能，特别适用于使用 QEMU 和 GDB 进行调试的场景。
 
-## Features
+## 功能特点
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- 🔍 实时内存查看：支持查看 MCU 的内存内容和寄存器值
+- 📊 内存布局可视化：直观显示内存分配和使用情况
+- 🔄 自动刷新：调试过程中自动更新内存信息
+- 💾 支持多种内存区域：包括 Flash、SRAM 等
+- 🛠 集成 GDB 调试：与 cortex-debug 无缝集成
 
-For example if there is an image subfolder under your extension project workspace:
+## 安装要求
 
-\!\[feature X\]\(images/feature-x.png\)
+- Visual Studio Code 1.80.0 或更高版本
+- cortex-debug 扩展
+- GDB 调试工具
+- QEMU（可选，用于仿真调试）
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## 使用方法
 
-## Requirements
+1. 安装扩展后，在 VSCode 中打开您的 MCU 项目
+2. 启动调试会话（使用 cortex-debug）
+3. 在 VSCode 侧边栏中找到 "MCU Memory Explorer" 视图
+4. 使用提供的功能查看和分析内存
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+## 扩展设置
 
-## Extension Settings
+此扩展提供以下设置：
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+* `mcuMemoryDebug.flash.start`: Flash 内存起始地址
+* `mcuMemoryDebug.flash.size`: Flash 内存大小（KB）
+* `mcuMemoryDebug.sram.start`: SRAM 起始地址
+* `mcuMemoryDebug.sram.size`: SRAM 大小（KB）
 
-For example:
+## 已知问题
 
-This extension contributes the following settings:
+- 暂无已知问题
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+## 更新日志
 
-## Known Issues
+详见 [CHANGELOG.md](CHANGELOG.md)
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+## 贡献
 
-## Release Notes
+欢迎提交 Issue 和 Pull Request！
 
-Users appreciate release notes as you update your extension.
+## 许可证
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
